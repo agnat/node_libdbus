@@ -29,7 +29,12 @@ class PendingCall : public v8_utils::Wrapped<PendingCall> {
         v8::Handle<v8::Value>
         GetCompleted(v8::Local<v8::String> property, const v8::AccessorInfo &info);
 
+        static void OnResult(DBusPendingCall * pc, void * data);
+        
         DBusPendingCall * pending_call_;
+        v8::Persistent<v8::Function> callback_;
+
+        static dbus_int32_t data_slot;
 };
 
 } // end of namespace node_dbus

@@ -18,6 +18,8 @@ var msg = dbus.createMethodCall(
 sys.puts(sys.inspect(msg));
 
 var call = c.sendWithReply(msg);
+call.setNotify(function(){sys.puts("plöng")});
+
 sys.puts("pending call: " + sys.inspect(call));
 
 setTimeout(function(){
