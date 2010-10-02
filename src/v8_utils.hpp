@@ -6,6 +6,46 @@
 
 namespace v8_utils {
 
+template <typename T>
+struct convert_to_js;
+
+template <>
+struct convert_to_js<const char*> {
+    static inline v8::Handle<v8::Value> convert(const char * str) {
+        return v8::String::New(str);
+    }
+};
+
+template <>
+struct convert_to_js<int> {
+    static inline v8::Handle<v8::Value> convert(int i) {
+        return v8::Integer::New(i);
+    }
+};
+
+template <>
+struct convert_to_js<unsigned> {
+    static inline v8::Handle<v8::Value> convert(unsigned u) {
+        return v8::Integer::NewFromUnsigned(u);
+    }
+};
+
+
+template <>
+struct convert_to_js<bool> {
+    static inline v8::Handle<v8::Value> convert(bool b) {
+        return v8::Boolean::New(b);
+    }
+};
+
+
+template <typename T>
+inline
+v8::Handle<v8::Value>
+to_js(T const & v) {
+    return convert_to_js<T>::convert(v);
+}
+
 inline
 void
 defineFunction(v8::Handle<v8::Object> target, const char * name, v8::InvocationCallback f) {
@@ -27,8 +67,8 @@ throwTypeError(const char * message) {
 
 inline
 bool
-argumentCountMismatch(v8::Arguments const& args, size_t expectedCount) {
-    return args.Length() != expectedCount;
+argumentCountMismatch(v8::Arguments const& args, size_t expected) {
+    return args.Length() != expected;
 }
 
 inline
@@ -70,6 +110,12 @@ class Wrapped : public node::ObjectWrap {
             return Unwrap<T>(obj);
         }
 
+        static inline
+        bool
+        HasInstance(v8::Handle<v8::Value> obj) {
+            return constructor_template->HasInstance(obj);
+        }
+
         static v8::Persistent<v8::FunctionTemplate> constructor_template;
         static const char * classname;
     protected:
@@ -90,6 +136,16 @@ class Wrapped : public node::ObjectWrap {
                   f, v8::Handle<v8::Value>(), sig);
             constructor_template->PrototypeTemplate()->Set(
                     v8::String::NewSymbol(name), t);
+        }
+
+        static
+        void
+        property(const char * name, v8::AccessorGetter getter, v8::AccessorSetter setter = NULL) {
+            constructor_template->InstanceTemplate()->SetAccessor(
+                  v8::String::NewSymbol(name)
+                , getter
+                , setter
+            );
         }
         
     private:

@@ -5,26 +5,56 @@
 #include "v8_utils.hpp"
 #include "node_dbus_utils.hpp"
 #include "node_dbus_watch.hpp"
+#include "node_dbus_timeout.hpp"
+#include "node_dbus_message.hpp"
+#include "node_dbus_pending_call.hpp"
 
 using namespace v8;
 using namespace v8_utils;
 
 namespace node_dbus {
 
-//==== dbus watch glue =========================================================
-dbus_bool_t 
-call_js_watch_function(const char * name, DBusWatch * watch,
-        void * connection_data)
-{
+//==== node <-> dbus glue =========================================================
+
+namespace detail {
+
+template <typename DBusT> struct data_accessor;
+
+template <>
+struct data_accessor<DBusWatch> {
+    static inline
+    void *
+    get(DBusWatch * watch) { return dbus_watch_get_data(watch); }
+};
+
+template <>
+struct data_accessor<DBusTimeout> {
+    static inline
+    void *
+    get(DBusTimeout * t) { return dbus_timeout_get_data(t); }
+};
+
+template <typename T>
+inline
+void *
+get_data(T * t) {
+    return data_accessor<T>::get(t);
+}
+
+} // end of namespace detail
+
+template <typename WrapperT, typename DBusT>
+dbus_bool_t
+call_dbus_glue(const char * name, DBusT * d, void * data) {
     HandleScope scope;
-    Connection * connection = static_cast<Connection*>(connection_data);
+    Connection * connection = static_cast<Connection*>(data);
     Local<Value> v = connection->handle_->Get(String::NewSymbol(name));
     if ( ! v->IsFunction()) {
-        std::cerr << "ERROR: failed to get addWatch() function" << std::endl;
+        std::cerr << "ERROR: failed to get " << name << "() function" << std::endl;
         return false;
     }
     Local<Function> f = Function::Cast(*v);
-    Local<Value> w = Local<Value>::New(static_cast<Watch*>(dbus_watch_get_data(watch))->handle_);
+    Local<Value> w = Local<Value>::New(static_cast<WrapperT*>(detail::get_data(d))->handle_);
     TryCatch trycatch;
     f->Call(connection->handle_, 1, & w);
     if (trycatch.HasCaught()) {
@@ -33,8 +63,23 @@ call_js_watch_function(const char * name, DBusWatch * watch,
         std::cerr << *exception_str << std::endl;
         return false;
     }
-
     return true;
+}
+
+inline
+dbus_bool_t 
+call_js_watch_function(const char * name, DBusWatch * watch,
+        void * data)
+{
+    return call_dbus_glue<Watch>(name, watch, data);
+}
+
+inline
+dbus_bool_t 
+call_js_timeout_function(const char * name, DBusTimeout * t,
+        void * data)
+{
+    return call_dbus_glue<Timeout>(name, t, data);
 }
 
 static
@@ -57,6 +102,26 @@ toggle_watch(DBusWatch * watch, void * data) {
     call_js_watch_function("toggleWatch", watch, data);
 }
 
+static
+dbus_bool_t
+add_timeout(DBusTimeout * timeout, void * data) {
+    Timeout * t = Timeout::New(timeout);
+    dbus_timeout_set_data(timeout, t, NULL /* free */);
+    return call_js_timeout_function("addTimeout", timeout, data);
+}
+
+static
+void
+remove_timeout(DBusTimeout * timeout, void * data) {
+    call_js_timeout_function("removeTimeout", timeout, data);
+}
+
+static
+void
+toggle_timeout(DBusTimeout * timeout, void * data) {
+    call_js_timeout_function("toggleTimeout", timeout, data);
+}
+
 //==== Connection ==============================================================
 
 Connection::Connection(DBusConnection * connection) :
@@ -77,13 +142,22 @@ Connection::Initialize(v8_utils::ObjectHandle exports) {
     HandleScope scope;
     base::Initialize("Connection", New);
 
+    prototype_method("send", Send);
+    prototype_method("sendWithReply", SendWithReply);
+    prototype_method("dispatch", Dispatch);
     prototype_method("close", Close);
+
+    property("isConnected", GetIsConnected);
+    property("isAuthenticated", GetIsAuthenticated);
+    property("isAnonymous", GetIsAnonymous);
+    property("serverId", GetServerId);
+    property("dispatchStatus", GetDispatchStatus);
 
     exports["Connection"] = function();
 }
 
 Handle<Value>
-Connection::New(v8::Arguments const& args) {
+Connection::New(Arguments const& args) {
     HandleScope scope;
     if (argumentCountMismatch(args, 1)) {
         return throwArgumentCountMismatchException(args, 1);
@@ -108,12 +182,77 @@ Connection::New(v8::Arguments const& args) {
             , o
             , NULL /*free data*/
     );
+    dbus_connection_set_timeout_functions(
+              connection
+            , add_timeout
+            , remove_timeout
+            , toggle_timeout
+            , o
+            , NULL /*free data*/
+    );
 
     return args.This();
 }
 
+Handle<Value>
+Connection::Send(Arguments const& args) {
+    HandleScope scope;
+    if (argumentCountMismatch(args, 1)) {
+        return throwArgumentCountMismatchException(args, 1);
+    }
+
+    if ( ! args[0]->IsObject()) {
+        return throwTypeError("argument 1 must be an object (DBusMessage)");
+    }
+    Message * msg = Message::unwrap(args[0]->ToObject());
+    Connection * c = unwrap(args.This());
+    dbus_uint32_t serial;
+    dbus_bool_t ok = dbus_connection_send(c->connection(), msg->message(),
+            &serial);
+    if ( ! ok ) {
+        return throwError("Out of memory");
+    }
+
+    return scope.Close(to_js(serial));
+}
+
+Handle<Value>
+Connection::SendWithReply(Arguments const& args) {
+    HandleScope scope;
+    if (argumentCountMismatch(args, 1)) {
+        return throwArgumentCountMismatchException(args, 1);
+    }
+
+    if ( ! args[0]->IsObject()) {
+        return throwTypeError("argument 1 must be an object (DBusMessage)");
+    }
+    Message * msg = Message::unwrap(args[0]->ToObject());
+
+    // TODO: Timeout argument
+    int timeout = 1000;
+    Connection * c = unwrap(args.This());
+    
+    DBusPendingCall * pending_call;
+    dbus_bool_t ok = dbus_connection_send_with_reply(c->connection(), msg->message(),
+            & pending_call, timeout);
+
+    if ( ! ok ) {
+        return throwError("Out of memory");
+    }
+
+    return scope.Close(PendingCall::New(pending_call)->handle_);
+}
+
 v8::Handle<v8::Value>
-Connection::Close(v8::Arguments const& args) {
+Connection::Dispatch(v8::Arguments const& args) {
+    HandleScope scope;
+    Connection * c = unwrap(args.This());
+    dbus_bool_t ok = dbus_connection_dispatch(c->connection());
+    return Undefined();
+}
+
+Handle<Value>
+Connection::Close(Arguments const& args) {
     HandleScope scope;
     Connection * c = Unwrap<Connection>(args.This());
     c->close();
@@ -123,6 +262,41 @@ void
 Connection::close() {
     dbus_connection_close(connection_);
     closed_ = true;
+}
+
+v8::Handle<v8::Value>
+Connection::GetIsConnected(v8::Local<v8::String> property, const AccessorInfo &info) {
+    HandleScope scope;
+    Connection * c = unwrap(info.Holder());
+    return scope.Close(Boolean::New((dbus_connection_get_is_connected(c->connection()))));
+}
+
+v8::Handle<v8::Value>
+Connection::GetIsAuthenticated(v8::Local<v8::String> property, const AccessorInfo &info) {
+    HandleScope scope;
+    Connection * c = unwrap(info.Holder());
+    return scope.Close(Boolean::New((dbus_connection_get_is_authenticated(c->connection()))));
+}
+
+v8::Handle<v8::Value>
+Connection::GetServerId(v8::Local<v8::String> property, const AccessorInfo &info) {
+    HandleScope scope;
+    Connection * c = unwrap(info.Holder());
+    return scope.Close(String::New((dbus_connection_get_server_id(c->connection()))));
+}
+
+v8::Handle<v8::Value>
+Connection::GetIsAnonymous(v8::Local<v8::String> property, const AccessorInfo &info) {
+    HandleScope scope;
+    Connection * c = unwrap(info.Holder());
+    return scope.Close(Boolean::New((dbus_connection_get_is_anonymous(c->connection()))));
+}
+
+v8::Handle<v8::Value>
+Connection::GetDispatchStatus(v8::Local<v8::String> property, const AccessorInfo &info) {
+    HandleScope scope;
+    Connection * c = unwrap(info.Holder());
+    return scope.Close(Integer::New((dbus_connection_get_dispatch_status(c->connection()))));
 }
 
 } // end of namespace node_dbus

@@ -17,9 +17,29 @@ class Connection : public v8_utils::Wrapped<Connection> {
         Connection();
         Connection(DBusConnection * connection);
         void close();
+        inline DBusConnection * connection() { return connection_; }
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
+        static v8::Handle<v8::Value> Send(v8::Arguments const&);
+        static v8::Handle<v8::Value> SendWithReply(v8::Arguments const&);
+        static v8::Handle<v8::Value> Dispatch(v8::Arguments const&);
         static v8::Handle<v8::Value> Close(v8::Arguments const&);
+
+        static
+        v8::Handle<v8::Value>
+        GetIsConnected(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        v8::Handle<v8::Value>
+        GetIsAuthenticated(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        v8::Handle<v8::Value>
+        GetIsAnonymous(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        v8::Handle<v8::Value>
+        GetServerId(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        v8::Handle<v8::Value>
+        GetDispatchStatus(v8::Local<v8::String> property, const v8::AccessorInfo &info);
 
         DBusConnection * connection_;
         bool             closed_;

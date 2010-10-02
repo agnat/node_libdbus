@@ -20,6 +20,7 @@ Watch::Initialize(v8_utils::ObjectHandle exports) {
     prototype_method("flags",   Flags);
     prototype_method("unixFd",  UnixFd);
     prototype_method("enabled", Enabled);
+    prototype_method("handle",  Handle);
 
     exports["Watch"] = function();
 }
@@ -57,13 +58,29 @@ Watch::Flags(v8::Arguments const& args) {
 v8::Handle<v8::Value>
 Watch::UnixFd(v8::Arguments const& args) {
     return HandleScope().Close(
-            Integer::New(dbus_watch_get_unix_fd(Watch::unwrap(args.This())->watch())));
+            to_js(dbus_watch_get_unix_fd(Watch::unwrap(args.This())->watch())));
 }
 
 v8::Handle<v8::Value>
 Watch::Enabled(v8::Arguments const& args) {
     return HandleScope().Close(
             Boolean::New(dbus_watch_get_enabled(Watch::unwrap(args.This())->watch())));
+}
+
+v8::Handle<v8::Value>
+Watch::Handle(v8::Arguments const& args) {
+    HandleScope scope;
+    if (argumentCountMismatch(args, 1)) {
+        return throwArgumentCountMismatchException(args, 1);
+    }
+    if ( ! args[0]->IsInt32()) {
+        return throwTypeError("argument 1 must be an integer (DBusWatchFlags)");
+    }
+    DBusWatchFlags flags = static_cast<DBusWatchFlags>(args[0]->Int32Value());
+
+    DBusWatch * watch = Watch::unwrap(args.This())->watch();
+    dbus_watch_handle(watch, flags);
+    return Undefined();
 }
 
 } // end of namespace node_dbus

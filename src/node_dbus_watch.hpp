@@ -27,6 +27,7 @@ class Watch : public v8_utils::Wrapped<Watch> {
         static v8::Handle<v8::Value> Flags(v8::Arguments const&);
         static v8::Handle<v8::Value> UnixFd(v8::Arguments const&);
         static v8::Handle<v8::Value> Enabled(v8::Arguments const&);
+        static v8::Handle<v8::Value> Handle(v8::Arguments const&);
 
         DBusWatch * watch_;
 };
