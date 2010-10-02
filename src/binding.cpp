@@ -82,6 +82,9 @@ init(Handle<Object> ex) {
     PendingCall::Initialize(exports);
 
     defineFunction(exports, "createMethodCall", Message::CreateMethodCall);
+    defineFunction(exports, "createMethodReturn", Message::CreateMethodReturn);
+    defineFunction(exports, "createErrorMessage", Message::CreateErrorMessage);
+    defineFunction(exports, "createSignal", Message::CreateSignal);
     
     init_constants(exports);
 }

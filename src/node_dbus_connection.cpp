@@ -243,8 +243,8 @@ Connection::SendWithReply(Arguments const& args) {
     return scope.Close(PendingCall::New(pending_call)->handle_);
 }
 
-v8::Handle<v8::Value>
-Connection::Dispatch(v8::Arguments const& args) {
+Handle<Value>
+Connection::Dispatch(Arguments const& args) {
     HandleScope scope;
     Connection * c = unwrap(args.This());
     dbus_bool_t ok = dbus_connection_dispatch(c->connection());
@@ -264,36 +264,36 @@ Connection::close() {
     closed_ = true;
 }
 
-v8::Handle<v8::Value>
-Connection::GetIsConnected(v8::Local<v8::String> property, const AccessorInfo &info) {
+Handle<Value>
+Connection::GetIsConnected(Local<String> property, const AccessorInfo &info) {
     HandleScope scope;
     Connection * c = unwrap(info.Holder());
     return scope.Close(Boolean::New((dbus_connection_get_is_connected(c->connection()))));
 }
 
-v8::Handle<v8::Value>
-Connection::GetIsAuthenticated(v8::Local<v8::String> property, const AccessorInfo &info) {
+Handle<Value>
+Connection::GetIsAuthenticated(Local<String> property, const AccessorInfo &info) {
     HandleScope scope;
     Connection * c = unwrap(info.Holder());
     return scope.Close(Boolean::New((dbus_connection_get_is_authenticated(c->connection()))));
 }
 
-v8::Handle<v8::Value>
-Connection::GetServerId(v8::Local<v8::String> property, const AccessorInfo &info) {
+Handle<Value>
+Connection::GetServerId(Local<String> property, const AccessorInfo &info) {
     HandleScope scope;
     Connection * c = unwrap(info.Holder());
     return scope.Close(String::New((dbus_connection_get_server_id(c->connection()))));
 }
 
-v8::Handle<v8::Value>
-Connection::GetIsAnonymous(v8::Local<v8::String> property, const AccessorInfo &info) {
+Handle<Value>
+Connection::GetIsAnonymous(Local<String> property, const AccessorInfo &info) {
     HandleScope scope;
     Connection * c = unwrap(info.Holder());
     return scope.Close(Boolean::New((dbus_connection_get_is_anonymous(c->connection()))));
 }
 
-v8::Handle<v8::Value>
-Connection::GetDispatchStatus(v8::Local<v8::String> property, const AccessorInfo &info) {
+Handle<Value>
+Connection::GetDispatchStatus(Local<String> property, const AccessorInfo &info) {
     HandleScope scope;
     Connection * c = unwrap(info.Holder());
     return scope.Close(Integer::New((dbus_connection_get_dispatch_status(c->connection()))));

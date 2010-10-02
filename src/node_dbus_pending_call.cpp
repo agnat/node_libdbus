@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "node_dbus_message.hpp"
+
 using namespace v8;
 using namespace v8_utils;
 
@@ -94,7 +96,9 @@ PendingCall::OnResult(DBusPendingCall * pc, void * data) {
     PendingCall * pending_call = static_cast<PendingCall*>(dbus_pending_call_get_data(pc, data_slot));
     if ( ! pending_call->callback_.IsEmpty()) {
         HandleScope scope;
-        pending_call->callback_->Call(pending_call->handle_, 0, NULL);
+        DBusMessage * m = dbus_pending_call_steal_reply(pending_call->pending_call());
+        Local<Value> message(Local<Value>::New( Message::New(m)->handle_ ));
+        pending_call->callback_->Call(pending_call->handle_, 1, & message);
     }
 }
 } // end of namespace node_dbus

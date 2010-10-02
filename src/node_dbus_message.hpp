@@ -16,13 +16,28 @@ class Message : public v8_utils::Wrapped<Message> {
         static v8::Handle<v8::Value> CreateErrorMessage(v8::Arguments const&);
         static v8::Handle<v8::Value> CreateSignal(v8::Arguments const&);
 
+        static Message * New(DBusMessage * msg);
+
         inline DBusMessage * message() { return message_; }
 
+        ~Message();
     private:
         Message();
         Message(DBusMessage * msg);
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
+
+        static
+        v8::Handle<v8::Value>
+        GetSerial(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+
+        static
+        v8::Handle<v8::Value>
+        GetReplySerial(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetReplySerial(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
 
         DBusMessage * message_;
 };
