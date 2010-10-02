@@ -1,0 +1,17 @@
+#include <node.h>
+#include <dbus/dbus.h>
+
+#include "v8_utils.hpp"
+
+using namespace v8;
+using namespace v8_utils;
+
+namespace node_dbus {
+
+Handle<Value>
+XXX(Arguments const& args) {
+    HandleScope scope;
+    return Undefined();
+}
+
+} // end of namespace node_dbus

@@ -19,6 +19,12 @@ def configure(conf):
   conf.check_tool('compiler_cxx')
   conf.check_tool('node_addon')
 
+  conf.check_cfg(
+      package='dbus-1'
+    , args='--cflags --libs'
+    , uselib_store='DBUS'
+  )
+
   conf.write_config_header('node_dbus_config.h');
 
 
@@ -29,9 +35,14 @@ def post_build(ctx):
 
 def build(bld):
   bld.add_post_fun(post_build)
-  obj = bld.new_task_gen('cxx', 'shlib', 'node_addon')
-  obj.target = 'binding'
-  obj.includes = '.'
-  obj.source = ['src/binding.cpp', 'src/connection.cpp']
+  addon = bld.new_task_gen('cxx', 'shlib', 'node_addon')
+  addon.target = 'binding'
+  addon.uselib = 'DBUS'
+  addon.source = [
+      'src/binding.cpp'
+    , 'src/node_dbus_connection.cpp'
+    , 'src/node_dbus_utils.cpp'
+    , 'src/node_dbus_watch.cpp'
+  ]
   
 # vim: set filetype=python :
