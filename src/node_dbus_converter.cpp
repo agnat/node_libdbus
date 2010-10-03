@@ -10,6 +10,8 @@ namespace node_dbus {
 struct InvalidTypeException {};
 
 Local<Value> convertArray(InserterStack & stack, DBusMessageIter * it, bool * new_container);
+Local<Value> convertString(DBusMessageIter * it);
+Local<Value> convertBool(DBusMessageIter * it);
 
 class Inserter {
     public:
@@ -44,6 +46,7 @@ Inserter::convert(InserterStack & stack) {
         case DBUS_TYPE_BYTE:
             break;
         case DBUS_TYPE_BOOLEAN:
+            v = convertBool(it());
             break;
         case DBUS_TYPE_INT16:
             break;
@@ -60,12 +63,8 @@ Inserter::convert(InserterStack & stack) {
         case DBUS_TYPE_DOUBLE:
             break;
         case DBUS_TYPE_STRING:
-        {
-            const char * str;
-            dbus_message_iter_get_basic(it(), & str);
-            std::cerr << "string: '" << str << "'" << std::endl;
+            v = convertString(it());
             break;
-        }
         case DBUS_TYPE_OBJECT_PATH:
             break;
         case DBUS_TYPE_SIGNATURE:
@@ -122,6 +121,20 @@ convertArray(InserterStack & stack, DBusMessageIter * it, bool * new_container) 
         dbus_message_iter_recurse( it, stack.back()->it());
     }
     return a;
+}
+
+Local<Value>
+convertString(DBusMessageIter * it) {
+    char * result;
+    dbus_message_iter_get_basic(it, & result);
+    return String::New(result);
+}
+
+Local<Value>
+convertBool(DBusMessageIter * it) {
+    bool result;
+    dbus_message_iter_get_basic(it, & result);
+    return Local<Value>::New(Boolean::New(result));
 }
 
 Handle<Value>
