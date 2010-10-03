@@ -130,7 +130,6 @@ Connection::Connection(DBusConnection * connection) :
 {}
 
 Connection::~Connection() {
-    std::cout << "Connection::~Connection()" << std::endl;
     if ( ! closed_ ) {
         dbus_connection_close(connection_);
     }

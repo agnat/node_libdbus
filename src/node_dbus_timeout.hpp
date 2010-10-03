@@ -15,6 +15,8 @@ class Timeout : public v8_utils::Wrapped<Timeout> {
         static Timeout * New(DBusTimeout * t);
 
         inline DBusTimeout * timeout() { return timeout_; }
+
+        ~Timeout();
     private:
         Timeout();
         Timeout(DBusTimeout * t);

@@ -26,6 +26,9 @@ class Message : public v8_utils::Wrapped<Message> {
         Message(DBusMessage * msg);
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
+        static v8::Handle<v8::Value> HasPath(v8::Arguments const&);
+        static v8::Handle<v8::Value> HasInterface(v8::Arguments const&);
+        static v8::Handle<v8::Value> Args(v8::Arguments const&);
 
         static
         v8::Handle<v8::Value>
@@ -39,6 +42,69 @@ class Message : public v8_utils::Wrapped<Message> {
         SetReplySerial(v8::Local<v8::String> property, v8::Local<v8::Value> value,
                 const v8::AccessorInfo& info);
 
+        static
+        v8::Handle<v8::Value>
+        GetType(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+
+        static
+        v8::Handle<v8::Value>
+        GetNoReply(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetNoReply(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetAutoStart(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetAutoStart(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetPath(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetPath(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetInterface(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetInterface(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetMember(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetMember(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetDestination(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetDestination(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetSender(v8::Local<v8::String> property, const v8::AccessorInfo &info);
+        static
+        void
+        SetSender(v8::Local<v8::String> property, v8::Local<v8::Value> value,
+                const v8::AccessorInfo& info);
+
+        static
+        v8::Handle<v8::Value>
+        GetSignature(v8::Local<v8::String> property, const v8::AccessorInfo &info);
         DBusMessage * message_;
 };
 

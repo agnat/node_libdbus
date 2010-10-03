@@ -15,8 +15,19 @@ var msg = dbus.createMethodCall(
 
 var call = c.sendWithReply(msg);
 call.setNotify(function(message){
-  sys.puts("==== plöng")
-  sys.puts(sys.inspect(message))
+  sys.puts("==== plöng");
+  sys.puts(sys.inspect(message));
+  switch (message.type) {
+    case dbus.DBUS_MESSAGE_TYPE_ERROR: sys.puts('error'); break;
+    case dbus.DBUS_MESSAGE_TYPE_SIGNAL: sys.puts('signal'); break;
+    case dbus.DBUS_MESSAGE_TYPE_METHOD_CALL: sys.puts('call'); break;
+    case dbus.DBUS_MESSAGE_TYPE_METHOD_RETURN:
+      sys.puts('return');
+      sys.puts(sys.inspect(message.args()));
+      sys.puts("====================");
+      break;
+    default: sys.puts('UNKNOWN'); break;
+  }
 });
 
 setTimeout(function(){

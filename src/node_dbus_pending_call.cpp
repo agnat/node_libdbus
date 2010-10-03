@@ -17,6 +17,13 @@ PendingCall::PendingCall(DBusPendingCall * call) :
 {
 }
 
+PendingCall::~PendingCall() {
+    if (pending_call_) {
+        dbus_pending_call_unref(pending_call_);
+        pending_call_ = NULL;
+    }
+}
+
 void
 PendingCall::Initialize(ObjectHandle exports) {
     base::Initialize("PendingCall", New);

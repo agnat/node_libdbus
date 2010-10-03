@@ -46,6 +46,7 @@ def build(bld):
     , 'src/node_dbus_timeout.cpp'
     , 'src/node_dbus_message.cpp'
     , 'src/node_dbus_pending_call.cpp'
+    , 'src/node_dbus_converter.cpp'
   ]
   
 # vim: set filetype=python :

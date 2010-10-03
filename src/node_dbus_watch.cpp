@@ -8,9 +8,7 @@ Watch::Watch(DBusWatch * watch) :
       watch_(watch)
 {}
 
-Watch::~Watch() {
-    std::cout << "Watch::~Watch" << std::endl;
-}
+Watch::~Watch() {}
 
 void
 Watch::Initialize(v8_utils::ObjectHandle exports) {

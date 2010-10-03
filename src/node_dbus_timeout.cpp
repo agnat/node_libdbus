@@ -10,6 +10,8 @@ Timeout::Timeout(DBusTimeout * t) :
     , timeout_(t)
 {}
 
+Timeout::~Timeout() {}
+
 void
 Timeout::Initialize(v8_utils::ObjectHandle exports) {
     base::Initialize("Timeout", New);

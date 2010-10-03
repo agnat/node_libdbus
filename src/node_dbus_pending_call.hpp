@@ -17,6 +17,7 @@ class PendingCall : public v8_utils::Wrapped<PendingCall> {
         inline
         DBusPendingCall *
         pending_call() { return pending_call_; }
+        ~PendingCall();
     private:
         PendingCall();
         PendingCall(DBusPendingCall * call);
