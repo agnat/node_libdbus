@@ -76,9 +76,7 @@ PendingCall::SetNotifiy(Arguments const& args) {
         return throwTypeError("argument 1 must be a function");
     }
     PendingCall * pc = unwrap(args.This());
-    pc->callback_ = Persistent<Function>::New(Local<Function>::Cast(args[0]));
-
-    dbus_pending_call_set_notify(pc->pending_call(), OnResult, NULL, NULL /*free*/);
+    pc->setCallback(Local<Function>::Cast(args[0]));
 
     return Undefined();
 }

@@ -26,15 +26,17 @@ process.on('exit', function() {
   process.exit(0);
 });
 
-var pending_call = bus.sendWithReply(msg);
-pending_call.setNotify(function(message){
-  gotReply = true;
-  assert.strictEqual(message.type, dbus.DBUS_MESSAGE_TYPE_METHOD_RETURN);
-  var result = message.args();
-  assert.strictEqual(typeof result, 'object');
-  assert.strictEqual(result.length, 1);
-  assert.ok(result[0].length > 0);
-  clearTimeout(timeout);
-  bus.close();
-});
+setTimeout(function() {
+  var pending_call = bus.send(msg, function(message){
+    gotReply = true;
+    assert.strictEqual(message.type, dbus.DBUS_MESSAGE_TYPE_METHOD_RETURN);
+    var result = message.args();
+    sys.puts(sys.inspect(result));
+    assert.strictEqual(typeof result, 'object');
+    assert.strictEqual(result.length, 1);
+    assert.ok(result[0].length > 0);
+    clearTimeout(timeout);
+    bus.close();
+  });
+}, 50);
 

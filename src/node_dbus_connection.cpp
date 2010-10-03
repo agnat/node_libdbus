@@ -122,6 +122,30 @@ toggle_timeout(DBusTimeout * timeout, void * data) {
     call_js_timeout_function("toggleTimeout", timeout, data);
 }
 
+static
+void
+dispatch_status_changed(DBusConnection * connection,
+        DBusDispatchStatus new_status, void * data)
+{
+    std::cerr << ")))))))" << std::endl;
+    HandleScope scope;
+    Connection * c = static_cast<Connection*>(data);
+    Local<Value> v = c->handle_->Get(String::NewSymbol("dispatchStatusChanged"));
+    if ( ! v->IsFunction()) {
+        std::cerr << "ERROR: failed to get dispatchStatusChanged() function" << std::endl;
+        return;
+    }
+    Local<Function> f = Function::Cast(*v);
+    TryCatch trycatch;
+    Local<Value> status(Integer::New(new_status));
+    f->Call(c->handle_, 1, & status);
+    if (trycatch.HasCaught()) {
+        Handle<Value> exception = trycatch.Exception();
+        String::AsciiValue exception_str(exception);
+        std::cerr << *exception_str << std::endl;
+    }
+}
+
 //==== Connection ==============================================================
 
 Connection::Connection(DBusConnection * connection) :
@@ -189,6 +213,14 @@ Connection::New(Arguments const& args) {
             , o
             , NULL /*free data*/
     );
+#if 0 //  hmm ... does not work
+    dbus_connection_set_dispatch_status_function(
+              connection
+            , dispatch_status_changed
+            , o
+            , NULL /*free data*/
+    );
+#endif
 
     return args.This();
 }
@@ -196,8 +228,8 @@ Connection::New(Arguments const& args) {
 Handle<Value>
 Connection::Send(Arguments const& args) {
     HandleScope scope;
-    if (argumentCountMismatch(args, 1)) {
-        return throwArgumentCountMismatchException(args, 1);
+    if (argumentCountMismatch(args, 1, 3)) {
+        return throwArgumentCountMismatchException(args, 1, 3);
     }
 
     if ( ! args[0]->IsObject()) {
@@ -205,14 +237,43 @@ Connection::Send(Arguments const& args) {
     }
     Message * msg = Message::unwrap(args[0]->ToObject());
     Connection * c = unwrap(args.This());
-    dbus_uint32_t serial;
-    dbus_bool_t ok = dbus_connection_send(c->connection(), msg->message(),
-            &serial);
-    if ( ! ok ) {
-        return throwError("Out of memory");
-    }
+    if (args.Length() == 1) {
+        dbus_uint32_t serial;
+        dbus_bool_t ok = dbus_connection_send(c->connection(), msg->message(),
+                &serial);
+        if ( ! ok ) {
+            return throwError("Out of memory");
+        }
+        return scope.Close(to_js(serial));
+    } else {
+        int timeout = 1000;
+        int callback_idx = 1;
+        if (args.Length() == 3) {
+            callback_idx = 2;
+            if ( ! args[1]->IsInt32()) {
+                return throwTypeError("argument 2 must be an integer (timeout[ms])");
+            }
+            timeout = args[1]->Int32Value();
+        }
+        if ( ! args[callback_idx]->IsFunction()) {
+            std::ostringstream msg;
+            msg << "argument " << callback_idx << " must be a function";
+            return throwTypeError(msg.str().c_str());
+        }
 
-    return scope.Close(to_js(serial));
+        DBusPendingCall * pc;
+        dbus_bool_t ok = dbus_connection_send_with_reply(c->connection(), msg->message(),
+                & pc, timeout);
+
+        if ( ! ok ) {
+            return throwError("Out of memory");
+        }
+
+        PendingCall * pending_call = PendingCall::New(pc);
+        pending_call->setCallback(Local<Function>::Cast(args[callback_idx]));
+
+        return scope.Close(pending_call->handle_);
+    }
 }
 
 Handle<Value>

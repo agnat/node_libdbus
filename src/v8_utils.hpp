@@ -67,16 +67,24 @@ throwTypeError(const char * message) {
 
 inline
 bool
-argumentCountMismatch(v8::Arguments const& args, size_t expected) {
-    return args.Length() != expected;
+argumentCountMismatch(v8::Arguments const& args, size_t min, int max = -1) {
+    if (max == -1) {
+        return args.Length() != min;
+    }
+    return min > args.Length() && args.Length() > max;
 }
 
 inline
 v8::Handle<v8::Value>
-throwArgumentCountMismatchException(v8::Arguments const& args, size_t expectedCount) {
+throwArgumentCountMismatchException(v8::Arguments const& args, size_t min, int max = -1) {
     std::ostringstream msg;
-    msg << "argument count mismatch: expected " << expectedCount 
-        << ", but got " <<  args.Length() << " arguments.";
+    if (max == -1) {
+        msg << "argument count mismatch: expected " << min 
+            << ", but got " <<  args.Length() << " arguments.";
+    } else {
+        msg << "argument count mismatch: expected " << min << " to " << max 
+            << ", but got " <<  args.Length() << " arguments.";
+    }
     return throwError(msg.str().c_str());
 }
 

@@ -17,6 +17,17 @@ class PendingCall : public v8_utils::Wrapped<PendingCall> {
         inline
         DBusPendingCall *
         pending_call() { return pending_call_; }
+
+        inline
+        void
+        setCallback(v8::Local<v8::Function> f) {
+            if ( ! callback_.IsEmpty()) {
+                callback_.Dispose();
+            }
+            callback_ = v8::Persistent<v8::Function>::New(f);
+            dbus_pending_call_set_notify(pending_call(), OnResult, NULL, NULL /*free*/);
+        }
+
         ~PendingCall();
     private:
         PendingCall();
