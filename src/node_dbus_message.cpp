@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "node_dbus_converter.hpp"
+#include "converter.hpp"
 
 using namespace v8;
 using namespace v8_utils;
@@ -97,12 +97,9 @@ Message::HasInterface(v8::Arguments const& args) {
 v8::Handle<v8::Value>
 Message::Args(v8::Arguments const& args) {
     HandleScope scope;
-    Local<Array> a(Array::New());
-    Traverser<DBusToV8> t(unwrap(args.Holder())->message(), a);
-    t.go();
-    return Undefined();
-    //Converter c;
-    //return scope.Close(c.convert(unwrap(args.Holder())));
+    Local<Array> result(Array::New());
+    convert(unwrap(args.Holder())->message(), result);
+    return scope.Close(result);
 }
 
 v8::Handle<v8::Value>
@@ -120,10 +117,7 @@ Message::appendArgs(Arguments const& args, size_t firstArg) {
     for (size_t i = firstArg; i < args.Length(); ++i) {
         a->Set(i - firstArg, args[i]);
     }
-    Traverser<V8ToDBus> t(message(), a);
-    t.go();
-
-    ArgumentAppender(this).append(a);
+    convert(a, message());
 }
 
 Handle<Value>

@@ -87,19 +87,19 @@ dbus_bool_t
 add_watch(DBusWatch * watch, void * data) {
     Watch * w = Watch::New(watch);
     dbus_watch_set_data(watch, w, NULL /* free */);
-    return call_js_watch_function("addWatch", watch, data);
+    return call_js_watch_function("_addWatch", watch, data);
 }
 
 static
 void
 remove_watch(DBusWatch * watch, void * data) {
-    call_js_watch_function("removeWatch", watch, data);
+    call_js_watch_function("_removeWatch", watch, data);
 }
 
 static
 void
 toggle_watch(DBusWatch * watch, void * data) {
-    call_js_watch_function("toggleWatch", watch, data);
+    call_js_watch_function("_toggleWatch", watch, data);
 }
 
 static
@@ -107,19 +107,19 @@ dbus_bool_t
 add_timeout(DBusTimeout * timeout, void * data) {
     Timeout * t = Timeout::New(timeout);
     dbus_timeout_set_data(timeout, t, NULL /* free */);
-    return call_js_timeout_function("addTimeout", timeout, data);
+    return call_js_timeout_function("_addTimeout", timeout, data);
 }
 
 static
 void
 remove_timeout(DBusTimeout * timeout, void * data) {
-    call_js_timeout_function("removeTimeout", timeout, data);
+    call_js_timeout_function("_removeTimeout", timeout, data);
 }
 
 static
 void
 toggle_timeout(DBusTimeout * timeout, void * data) {
-    call_js_timeout_function("toggleTimeout", timeout, data);
+    call_js_timeout_function("_toggleTimeout", timeout, data);
 }
 
 static
@@ -127,10 +127,10 @@ void
 dispatch_status_changed(DBusConnection * connection,
         DBusDispatchStatus new_status, void * data)
 {
-    std::cerr << ")))))))" << std::endl;
+    std::cerr << "==== dispatch status changed" << std::endl;
     HandleScope scope;
     Connection * c = static_cast<Connection*>(data);
-    Local<Value> v = c->handle_->Get(String::NewSymbol("dispatchStatusChanged"));
+    Local<Value> v = c->handle_->Get(String::NewSymbol("_dispatchStatusChanged"));
     if ( ! v->IsFunction()) {
         std::cerr << "ERROR: failed to get dispatchStatusChanged() function" << std::endl;
         return;

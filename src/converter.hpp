@@ -1,6 +1,7 @@
 #ifndef NODE_DBUS_CONVERTER2_INCLUDED
 #define NODE_DBUS_CONVERTER2_INCLUDED
 
+#include <tr1/memory>
 #include <vector>
 #include <iostream>
 #include <v8.h>
@@ -8,73 +9,79 @@
 
 namespace node_dbus { namespace detail {
 
-struct V8_tag {};
-struct DBus_tag {};
+enum ContainerType {
+    CONTAINER_ARRAY,
+    CONTAINER_DICT
+};
 
-template <typename Tag> struct other_tag;
-template <> struct other_tag<V8_tag>   { typedef DBus_tag type; };
-template <> struct other_tag<DBus_tag> { typedef V8_tag   type;  };
-
-template <typename Tag> struct result;
-template <> struct result<V8_tag>   { typedef v8::Handle<v8::Value> type; };
-template <> struct result<DBus_tag> { typedef DBusMessage *         type; };
-
-template <typename Tag> struct input;
-template <> struct input<V8_tag>   { typedef v8::Handle<v8::Value> type; };
-template <> struct input<DBus_tag> { typedef DBusMessage *         type; };
-
-template <typename Tag> struct iterator;
-
-struct v8_iterator {
-    v8_iterator(v8::Handle<v8::Value> src) :
-          src_(v8::Persistent<v8::Object>::New(src->ToObject()))
-        , idx_()
-        , end_()
-        , keys_() 
-    {
-        v8::HandleScope scope;
-        if (src->IsArray()) {
-            std::cerr << "iterator ARRAY" << std::endl;
-            end_ = v8::Array::Cast(*src)->Length();
-        } else {
-            keys_ = v8::Persistent<v8::Array>::New(src->ToObject()->GetPropertyNames());
-            end_ = keys_->Length();
+class v8_iterator {
+    public:
+        v8_iterator(v8::Handle<v8::Value> src) :
+              src_(v8::Persistent<v8::Object>::New(src->ToObject()))
+            , idx_()
+            , end_()
+            , keys_() 
+        {
+            init();
         }
-    }
+        v8_iterator(v8_iterator & parent, ContainerType type) :
+              src_(v8::Persistent<v8::Object>::New((*parent)->ToObject()))
+            , idx_()
+            , end_()
+            , keys_()
+        {
+            init();
+        }
 
-    void
-    next() {
-        if (keys_.IsEmpty()) {
-            ++idx_;
-        } else {
-            do {
+        void
+        next() {
+            if (keys_.IsEmpty()) {
                 ++idx_;
-            } while ( idx_ < end_ &&
-                    ! src_->HasRealNamedProperty(keys_->Get(v8::Integer::New(idx_))->ToString()));
+            } else {
+                do {
+                    ++idx_;
+                } while ( idx_ < end_ &&
+                        ! src_->HasRealNamedProperty(keys_->Get(v8::Integer::New(idx_))->ToString()));
+            }
         }
-    }
 
-    operator bool() const { return idx_ < end_; }
+        operator bool() const { return idx_ < end_; }
 
-    v8::Handle<v8::Value> operator *() const {
-        v8::HandleScope scope;
-        if ( keys_.IsEmpty()) {
-            return scope.Close(src_->Get(idx_));
-        } else {
-            v8::Local<v8::Value> key = keys_->Get(idx_);
-            return scope.Close(src_->Get(key));
-        };
-    }
+        v8::Handle<v8::Value> operator *() const {
+            v8::HandleScope scope;
+            if ( keys_.IsEmpty()) {
+                return scope.Close(src_->Get(idx_));
+            } else {
+                v8::Local<v8::Value> key = keys_->Get(idx_);
+                return scope.Close(src_->Get(key));
+            };
+        }
+    private:
 
-    v8::Persistent<v8::Object> src_;
-    size_t                     idx_;
-    size_t                     end_;
-    v8::Persistent<v8::Array>  keys_;
+        void
+        init() {
+            v8::HandleScope scope;
+            if (src_->IsArray()) {
+                end_ = v8::Array::Cast(*src_)->Length();
+            } else {
+                keys_ = v8::Persistent<v8::Array>::New(src_->ToObject()->GetPropertyNames());
+                end_ = keys_->Length();
+            }
+        }
+
+        v8::Persistent<v8::Object> src_;
+        size_t                     idx_;
+        size_t                     end_;
+        v8::Persistent<v8::Array>  keys_;
 };
 
 struct dbus_iterator {
     dbus_iterator(DBusMessage * src) {
         dbus_message_iter_init( src, & it_ );
+        cache_state();
+    }
+    dbus_iterator(dbus_iterator & parent, ContainerType type) {
+        dbus_message_iter_recurse( & parent.it_, & it_ );
         cache_state();
     }
     void next() {
@@ -110,40 +117,96 @@ struct dbus_iterator {
 
 struct v8_sink {
     v8_sink(v8::Handle<v8::Value> dst) :
-          dst_(dst->ToObject())
+          dst_(v8::Persistent<v8::Object>::New(dst->ToObject()))
         , idx_()
     {}
+    v8_sink(v8_sink & parent, ContainerType type) :
+        idx_()
+    {
+        if (type == CONTAINER_ARRAY) {
+            dst_ = v8::Persistent<v8::Array>::New(v8::Array::New());
+            parent.add(dst_);
+        } else {
+            std::cerr << "v8_sink: TODO handle dict" << std::endl;
+        }
+    }
+    ~v8_sink() {
+        if ( ! dst_.IsEmpty()) dst_.Dispose();
+    }
     template <typename S>
     void accept(dbus_iterator /*const*/& it, S & stack) {
         if (it.current_type() == DBUS_TYPE_BOOLEAN) {
+            dst_->Set(idx_++, v8::Boolean::New(it.get<bool>()));
         } else if (it.current_type() == DBUS_TYPE_INT32) {
             dst_->Set(idx_++, v8::Integer::New(it.get<int32_t>()));
+        } else if (it.current_type() == DBUS_TYPE_UINT32) {
+            dst_->Set(idx_++, v8::Integer::NewFromUnsigned(it.get<uint32_t>()));
+        } else if (it.current_type() == DBUS_TYPE_STRING) {
+            dst_->Set(idx_++, v8::String::New(it.get<const char *>()));
+        } else if (it.current_type() == DBUS_TYPE_ARRAY) {
+            typedef typename S::value_type::element_type frame;
+            typedef typename S::value_type frame_ptr;
+            stack.push_back(frame_ptr(new frame(it, *this, CONTAINER_ARRAY)));
+        } else {
+            std::cerr << "v8 sink: unhandled type" << std::endl;
         }
     }
-    v8::Handle<v8::Object> dst_;
-    size_t                 idx_; // TODO: key value stuff
+
+    void
+    add(v8::Handle<v8::Object> obj) {
+        dst_->Set(idx_, obj);
+    }
+    v8::Persistent<v8::Object> dst_;
+    size_t                     idx_; // TODO: key value stuff
 };
 
-struct dbus_sink {
-    dbus_sink(DBusMessage * dst) {
-        dbus_message_iter_init_append(dst, & it_);
-    }
-    template <typename S>
-    void accept(v8_iterator const& it, S & stack) {
-        if ((*it)->IsBoolean()) {
-            bool v = (*it)->ToBoolean()->Value();
-            dbus_message_iter_append_basic( & it_, DBUS_TYPE_BOOLEAN, & v);
-        } else if ((*it)->IsInt32()) {
-            int32_t v = (*it)->Int32Value();
-            dbus_message_iter_append_basic( & it_, DBUS_TYPE_INT32, & v);
-        } else if ((*it)->IsUint32()) {
-            uint32_t v = (*it)->Uint32Value();
-            dbus_message_iter_append_basic( & it_, DBUS_TYPE_UINT32, & v);
-        } else {
-            std::cerr << "unhandled type" << std::endl;
+class dbus_sink {
+    public:
+        dbus_sink(DBusMessage * dst) : requires_close_(false) {
+            dbus_message_iter_init_append(dst, & it_);
         }
-    }
-    DBusMessageIter it_;
+        dbus_sink(dbus_sink & parent, ContainerType type) :
+              requires_close_(true)
+            , parent_( & parent.it_ )
+        {
+            dbus_message_iter_open_container( & parent.it_, DBUS_TYPE_STRUCT, NULL, & it_);
+        }
+        ~dbus_sink() {
+            if (requires_close_) {
+                dbus_message_iter_close_container( parent_, & it_);
+            }
+        }
+
+        template <typename S>
+        void accept(v8_iterator & it, S & stack) {
+            if ((*it)->IsBoolean()) {
+                bool v = (*it)->ToBoolean()->Value();
+                dbus_message_iter_append_basic( & it_, DBUS_TYPE_BOOLEAN, & v);
+            } else if ((*it)->IsInt32()) {
+                int32_t v = (*it)->Int32Value();
+                dbus_message_iter_append_basic( & it_, DBUS_TYPE_INT32, & v);
+            } else if ((*it)->IsUint32()) {
+                uint32_t v = (*it)->Uint32Value();
+                dbus_message_iter_append_basic( & it_, DBUS_TYPE_UINT32, & v);
+            } else if ((*it)->IsString()) {
+                v8::String::Utf8Value v((*it)->ToString());
+                const char * str = *v;
+                dbus_message_iter_append_basic( & it_, DBUS_TYPE_STRING, & str);
+            } else if ((*it)->IsArray()) {
+                typedef typename S::value_type::element_type frame;
+                typedef typename S::value_type frame_ptr;
+                stack.push_back(frame_ptr(new frame(it, *this, CONTAINER_ARRAY)));
+            } else {
+                std::cerr << "dbus sink: unhandled type" << std::endl;
+            }
+        }
+    private:
+        dbus_sink();
+        dbus_sink(dbus_sink const&);
+        dbus_sink & operator=(dbus_sink const&);
+        DBusMessageIter it_;
+        bool requires_close_;
+        DBusMessageIter * parent_;
 };
 
 template <typename SrcT> struct select_iterator { typedef v8_iterator type; };
@@ -160,6 +223,11 @@ struct stack_frame {
 
     stack_frame(SrcT src, DstT dst) : it_(src), sink_(dst) {}
 
+    stack_frame(iterator & parent_it, sink & parent_sink, ContainerType type) :
+          it_(parent_it, type)
+        , sink_(parent_sink, type)
+    {}
+
     template <typename S>
     bool
     work(S & stack) {
@@ -175,43 +243,23 @@ struct stack_frame {
     sink     sink_;
 };
 
-/*
-template <typename TargetTag>
-struct convert_to {
-    typedef TargetTag                            target_tag;
-    typedef typename other_tag<target_tag>::type source_tag;
-    typedef stack_frame<source_tag, target_tag>  stack_frame_type;
-    typedef std::vector<stack_frame_type>        stack_type;
-    typedef typename result<target_tag>::type    result_type;
-    typedef typename input<source_tag>::type     input_type;
+} // end of namespace detail
 
-    static
-    void
-    convert(input_type src, result_type dst) {
-        stack_type stack;
-        stack.push_back(stack_frame_type(src, dst));
-        while ( ! stack.empty() ) {
-            if ( ! stack.back().work(stack)) {
-                stack.pop_back();
-            }
-        }
-    }
-};
-*/
 template <typename SrcT, typename DstT>
 void
 convert(SrcT src, DstT dst) {
+    using detail::stack_frame;
     typedef stack_frame<SrcT, DstT> frame;
-    typedef std::vector<frame> stack;
+    typedef std::tr1::shared_ptr<frame> frame_ptr;
+    typedef std::vector<frame_ptr> stack;
     stack s;
-    s.push_back(frame(src, dst));
+    s.push_back(frame_ptr( new frame(src, dst)));
     while ( ! s.empty() ) {
-        if ( ! s.back().work(s)) {
+        if ( ! s.back()->work(s)) {
             s.pop_back();
         }
     }
 }
 
-
-}} // end of namespace detail, node_dbus
+} // end of namespace node_dbus
 #endif // NODE_DBUS_CONVERTER2_INCLUDED

@@ -36,10 +36,10 @@ size_t unit_test::total_failed = 0;
 
 #define OK(exp) ok(exp, #exp)
 
-struct testV8ObjectIterator : unit_test {
+struct testConvert : unit_test {
     void
     run() {
-        std::cerr << "=== testV8ObjectIterator" << std::endl;
+        std::cerr << "=== testConvert" << std::endl;
         HandleScope scope;
 
         Local<Object> a = Array::New();
@@ -49,17 +49,25 @@ struct testV8ObjectIterator : unit_test {
             a->Set(i, Integer::New(i));
         }
         DBusMessage * msg = dbus_message_new_signal("/foo", "de.foo.bar", "foobar");
-        detail::convert(a, msg);
+        convert(a, msg);
 
         std::string expected_sig("iiiii");
         OK(expected_sig == dbus_message_get_signature(msg));
 
         Local<Array> out = Array::New();
-        detail::convert(msg, out);
+        convert(msg, out);
         OK(out->Length() == s);
         for (size_t i = 0; i < s; ++i) {
             OK(a->Get(i)->Int32Value() == out->Get(i)->Int32Value());
         }
+
+        Local<Array> array_of_arrays = Array::New();
+        array_of_arrays->Set(0, a);
+        array_of_arrays->Set(1, out);
+        DBusMessage * array_of_arrays_msg = dbus_message_new_signal("/foo", "de.foo.bar", "foobar");
+        convert(array_of_arrays, array_of_arrays_msg);
+
+        std::cerr << "=== SIG: " << dbus_message_get_signature(array_of_arrays_msg) << std::endl;
 
         Local<Object> o = Object::New();
         o->Set(String::New("one"), Integer::New(1));
@@ -70,7 +78,7 @@ struct testV8ObjectIterator : unit_test {
 
 void
 run_tests() {
-    testV8ObjectIterator().run();
+    testConvert().run();
 }
 }} // end of namespace tests, node_dbus
 

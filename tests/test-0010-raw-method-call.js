@@ -16,7 +16,6 @@ var msg = dbus.createMethodCall(
 
 var timeout = setTimeout(function(){
   assert.ok(false);
-  process.exit(1);
 }, 2000);
 
 var gotReply = false;
