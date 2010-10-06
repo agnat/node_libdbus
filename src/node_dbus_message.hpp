@@ -25,10 +25,13 @@ class Message : public v8_utils::Wrapped<Message> {
         Message();
         Message(DBusMessage * msg);
 
+        void appendArgs(v8::Arguments const& args, size_t firstArg = 0);
+
         static v8::Handle<v8::Value> New(v8::Arguments const&);
         static v8::Handle<v8::Value> HasPath(v8::Arguments const&);
         static v8::Handle<v8::Value> HasInterface(v8::Arguments const&);
         static v8::Handle<v8::Value> Args(v8::Arguments const&);
+        static v8::Handle<v8::Value> AppendArgs(v8::Arguments const&);
 
         static
         v8::Handle<v8::Value>

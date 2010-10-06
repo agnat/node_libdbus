@@ -29,6 +29,7 @@ Message::Initialize(v8_utils::ObjectHandle exports) {
     prototype_method("hasPath", HasPath);
     prototype_method("hasInterface", HasInterface);
     prototype_method("args", Args);
+    prototype_method("appendArgs", AppendArgs);
 
     property("serial", GetSerial);
     property("replySerial", GetReplySerial, SetReplySerial);
@@ -96,8 +97,33 @@ Message::HasInterface(v8::Arguments const& args) {
 v8::Handle<v8::Value>
 Message::Args(v8::Arguments const& args) {
     HandleScope scope;
-    Converter c;
-    return scope.Close(c.convert(unwrap(args.Holder())));
+    Local<Array> a(Array::New());
+    Traverser<DBusToV8> t(unwrap(args.Holder())->message(), a);
+    t.go();
+    return Undefined();
+    //Converter c;
+    //return scope.Close(c.convert(unwrap(args.Holder())));
+}
+
+v8::Handle<v8::Value>
+Message::AppendArgs(v8::Arguments const& args) {
+    HandleScope scope;
+    Message * msg = unwrap(args.Holder());
+    msg->appendArgs(args);
+    return Undefined();
+}
+
+void
+Message::appendArgs(Arguments const& args, size_t firstArg) {
+    HandleScope scope;
+    Local<Array> a(Array::New());
+    for (size_t i = firstArg; i < args.Length(); ++i) {
+        a->Set(i - firstArg, args[i]);
+    }
+    Traverser<V8ToDBus> t(message(), a);
+    t.go();
+
+    ArgumentAppender(this).append(a);
 }
 
 Handle<Value>

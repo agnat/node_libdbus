@@ -32,6 +32,8 @@ def post_build(ctx):
   #print("=== post")
   if not os.path.exists('lib/binding.node'):
       os.symlink( '../build/default/binding.node', 'lib/binding.node')
+  if not os.path.exists('lib/tests.node'):
+      os.symlink( '../build/default/tests.node', 'lib/tests.node')
 
 def build(bld):
   bld.add_post_fun(post_build)
@@ -48,5 +50,10 @@ def build(bld):
     , 'src/node_dbus_pending_call.cpp'
     , 'src/node_dbus_converter.cpp'
   ]
+
+  tests = bld.new_task_gen('cxx', 'shlib', 'node_addon')
+  tests.target = 'tests'
+  tests.uselib = 'DBUS'
+  tests.source = 'src/tests.cpp'
   
 # vim: set filetype=python :

@@ -35,6 +35,15 @@ setTimeout(function() {
     assert.strictEqual(typeof result, 'object');
     assert.strictEqual(result.length, 1);
     assert.ok(result[0].length > 0);
+    var serviceNames = result[0];
+    var foundDBus = false;
+    for (var i = 0; i < serviceNames.length; ++i) {
+      if (serviceNames[i] === 'org.freedesktop.DBus') {
+        foundDBus = true;
+        break;
+      }
+    }
+    assert.ok(foundDBus);
     clearTimeout(timeout);
     bus.close();
   });
