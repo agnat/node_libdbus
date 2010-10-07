@@ -19,6 +19,8 @@ template <> struct convert_to_js<DBusDispatchStatus> : convert_to_js<int> {};
 
 namespace node_dbus {
 
+Handle<Value> introspectionXmlToJs(Arguments const&);
+
 template <typename T>
 inline
 void
@@ -29,17 +31,6 @@ defineConstant(Handle<Object> exports, const char * name, T value) {
                 static_cast<PropertyAttribute>(ReadOnly|DontDelete));
 }
 
-inline
-void
-defineStringConstant(Handle<Object> exports,
-        const char * name, const char * value)
-{
-    exports->Set(String::NewSymbol(name),
-                String::New(value),
-                static_cast<PropertyAttribute>(ReadOnly|DontDelete));
-}
-
-#define STRING_CONSTANT(ex, C) defineStringConstant(ex, #C, C)
 #define DEFINE_CONSTANT(ex, C) defineConstant(ex, #C, C)
 
 void 
@@ -64,7 +55,11 @@ init_constants(ObjectHandle exports) {
 
     DEFINE_CONSTANT(constants, DBUS_SERVICE_DBUS);
     DEFINE_CONSTANT(constants, DBUS_PATH_DBUS);
+
     DEFINE_CONSTANT(constants, DBUS_INTERFACE_DBUS);
+    DEFINE_CONSTANT(constants, DBUS_INTERFACE_INTROSPECTABLE);
+    DEFINE_CONSTANT(constants, DBUS_INTERFACE_PROPERTIES);
+    DEFINE_CONSTANT(constants, DBUS_INTERFACE_PEER);
 
     DEFINE_CONSTANT(constants, DBUS_DISPATCH_DATA_REMAINS);
     DEFINE_CONSTANT(constants, DBUS_DISPATCH_COMPLETE);
@@ -85,6 +80,8 @@ init(Handle<Object> ex) {
     defineFunction(exports, "createMethodReturn", Message::CreateMethodReturn);
     defineFunction(exports, "createErrorMessage", Message::CreateErrorMessage);
     defineFunction(exports, "createSignal", Message::CreateSignal);
+
+    defineFunction(exports, "introspectionXmlToJs", introspectionXmlToJs);
     
     init_constants(exports);
 }

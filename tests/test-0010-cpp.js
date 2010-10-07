@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var t   = require('./lib/tests')
   , sys = require('sys')
   ;

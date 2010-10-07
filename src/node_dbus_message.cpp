@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "converter.hpp"
+#include "node_dbus_convert.hpp"
 
 using namespace v8;
 using namespace v8_utils;
