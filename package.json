@@ -1,0 +1,19 @@
+{ "name" : "dbus"
+, "version" : "0.0.1"
+, "description" : "DBus RPC add-on"
+, "author": "David Siegel <david@artcom.de>"
+, "contributors": []
+, "main": "./lib/dbus"
+, "scripts": { "install": "node-waf configure build"}
+, "licenses": [
+    { "type": "MIT"
+    , "url": "http://github.com/agnat/node_dbus/raw/master/LICENSE"
+    }
+  ]
+, "bugs": { "web": "http://github.com/agnat/node_dbus/issues" }
+, "repository":
+  { "type": "git"
+  , "url":  "http://github.com/agnat/node_dbus.git"
+  }
+}
+
