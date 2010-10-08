@@ -11,7 +11,7 @@ var timeout = setTimeout(function() {
   process.exit(1);
 }, 5000);
 
-var expectedResults = 2;
+var expectedResults = 3;
 var resultCount = 0;
 function onTestDone() {
   resultCount += 1;
@@ -29,6 +29,11 @@ bus.introspect('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(data) {
 
 bus.getObject('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(obj) {
   assert.strictEqual(obj.name, dbus.DBUS_PATH_DBUS);
+  var o = dbus.getInterface(obj, dbus.DBUS_INTERFACE_DBUS);
+  o.listNames(function(result) {
+    sys.puts(sys.inspect(result.args()));
+    onTestDone();
+  });
   onTestDone();
 });
 
