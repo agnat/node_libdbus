@@ -8,119 +8,12 @@
 #include "node_dbus_timeout.hpp"
 #include "node_dbus_message.hpp"
 #include "node_dbus_pending_call.hpp"
+#include "node_dbus_mainloop_callbacks.hpp"
 
 using namespace v8;
 using namespace v8_utils;
 
 namespace node_dbus {
-
-//==== node <-> dbus glue =========================================================
-
-namespace detail {
-
-template <typename DBusT> struct data_accessor;
-
-template <>
-struct data_accessor<DBusWatch> {
-    static inline
-    void *
-    get(DBusWatch * watch) { return dbus_watch_get_data(watch); }
-};
-
-template <>
-struct data_accessor<DBusTimeout> {
-    static inline
-    void *
-    get(DBusTimeout * t) { return dbus_timeout_get_data(t); }
-};
-
-template <typename T>
-inline
-void *
-get_data(T * t) {
-    return data_accessor<T>::get(t);
-}
-
-} // end of namespace detail
-
-template <typename WrapperT, typename DBusT>
-dbus_bool_t
-call_dbus_glue(const char * name, DBusT * d, void * data) {
-    HandleScope scope;
-    Connection * connection = static_cast<Connection*>(data);
-    Local<Value> v = connection->handle_->Get(String::NewSymbol(name));
-    if ( ! v->IsFunction()) {
-        std::cerr << "ERROR: failed to get " << name << "() function" << std::endl;
-        return false;
-    }
-    Local<Function> f = Function::Cast(*v);
-    Local<Value> w = Local<Value>::New(static_cast<WrapperT*>(detail::get_data(d))->handle_);
-    TryCatch trycatch;
-    f->Call(connection->handle_, 1, & w);
-    if (trycatch.HasCaught()) {
-        Handle<Value> exception = trycatch.Exception();
-        String::AsciiValue exception_str(exception);
-        std::cerr << *exception_str << std::endl;
-        return false;
-    }
-    return true;
-}
-
-inline
-dbus_bool_t 
-call_js_watch_function(const char * name, DBusWatch * watch,
-        void * data)
-{
-    return call_dbus_glue<Watch>(name, watch, data);
-}
-
-inline
-dbus_bool_t 
-call_js_timeout_function(const char * name, DBusTimeout * t,
-        void * data)
-{
-    return call_dbus_glue<Timeout>(name, t, data);
-}
-
-static
-dbus_bool_t
-add_watch(DBusWatch * watch, void * data) {
-    Watch * w = Watch::New(watch);
-    dbus_watch_set_data(watch, w, NULL /* free */);
-    return call_js_watch_function("_addWatch", watch, data);
-}
-
-static
-void
-remove_watch(DBusWatch * watch, void * data) {
-    call_js_watch_function("_removeWatch", watch, data);
-}
-
-static
-void
-toggle_watch(DBusWatch * watch, void * data) {
-    call_js_watch_function("_toggleWatch", watch, data);
-}
-
-static
-dbus_bool_t
-add_timeout(DBusTimeout * timeout, void * data) {
-    Timeout * t = Timeout::New(timeout);
-    dbus_timeout_set_data(timeout, t, NULL /* free */);
-    return call_js_timeout_function("_addTimeout", timeout, data);
-}
-
-static
-void
-remove_timeout(DBusTimeout * timeout, void * data) {
-    call_js_timeout_function("_removeTimeout", timeout, data);
-}
-
-static
-void
-toggle_timeout(DBusTimeout * timeout, void * data) {
-    call_js_timeout_function("_toggleTimeout", timeout, data);
-}
 
 static
 void
@@ -145,6 +38,7 @@ dispatch_status_changed(DBusConnection * connection,
         std::cerr << *exception_str << std::endl;
     }
 }
+
 
 //==== Connection ==============================================================
 
@@ -199,28 +93,26 @@ Connection::New(Arguments const& args) {
     o->Wrap(args.This());
     dbus_connection_set_watch_functions(
               connection
-            , add_watch
-            , remove_watch
-            , toggle_watch
+            , add_watch<Connection>
+            , remove_watch<Connection>
+            , toggle_watch<Connection>
             , o
             , NULL /*free data*/
     );
     dbus_connection_set_timeout_functions(
               connection
-            , add_timeout
-            , remove_timeout
-            , toggle_timeout
+            , add_timeout<Connection>
+            , remove_timeout<Connection>
+            , toggle_timeout<Connection>
             , o
             , NULL /*free data*/
     );
-#if 0 //  hmm ... does not work
     dbus_connection_set_dispatch_status_function(
               connection
             , dispatch_status_changed
             , o
             , NULL /*free data*/
     );
-#endif
 
     return args.This();
 }

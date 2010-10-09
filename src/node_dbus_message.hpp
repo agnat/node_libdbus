@@ -23,7 +23,10 @@ class Message : public v8_utils::Wrapped<Message> {
         ~Message();
     private:
         Message();
-        Message(DBusMessage * msg);
+        Message(Message const&);
+        Message const& operator=(Message const&);
+
+        explicit Message(DBusMessage * msg);
 
         void appendArgs(v8::Arguments const& args, size_t firstArg = 0);
 

@@ -31,7 +31,10 @@ class PendingCall : public v8_utils::Wrapped<PendingCall> {
         ~PendingCall();
     private:
         PendingCall();
-        PendingCall(DBusPendingCall * call);
+        PendingCall(PendingCall const&);
+        PendingCall const& operator=(PendingCall const&);
+
+        explicit PendingCall(DBusPendingCall * call);
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
         static v8::Handle<v8::Value> SetNotifiy(v8::Arguments const&);

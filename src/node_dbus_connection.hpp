@@ -12,12 +12,17 @@ class Connection : public v8_utils::Wrapped<Connection> {
     public:
         static void Initialize(v8_utils::ObjectHandle exports);
 
+        inline DBusConnection * connection() { return connection_; }
+
         ~Connection();
     private:
         Connection();
-        Connection(DBusConnection * connection);
+        Connection(Connection const&);
+        Connection const& operator=(Connection const&);
+
+        explicit Connection(DBusConnection * connection);
+
         void close();
-        inline DBusConnection * connection() { return connection_; }
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
         static v8::Handle<v8::Value> Send(v8::Arguments const&);

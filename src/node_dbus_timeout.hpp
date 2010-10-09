@@ -19,7 +19,10 @@ class Timeout : public v8_utils::Wrapped<Timeout> {
         ~Timeout();
     private:
         Timeout();
-        Timeout(DBusTimeout * t);
+        Timeout(Timeout const&);
+        Timeout const& operator=(Timeout const&);
+
+        explicit Timeout(DBusTimeout * t);
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
         static v8::Handle<v8::Value> Handle(v8::Arguments const&);

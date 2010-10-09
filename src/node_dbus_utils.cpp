@@ -4,6 +4,9 @@
 #include <dbus/dbus.h>
 
 #include "v8_utils.hpp"
+#include "node_dbus_connection.hpp"
+#include "node_dbus_watch.hpp"
+#include "node_dbus_timeout.hpp"
 
 using namespace v8;
 using namespace v8_utils;
@@ -26,5 +29,6 @@ NodeDBusError::exception() const {
     msg << "DBus error: " << error_.message;
     return throwError(msg.str().c_str());
 }
+
 
 } // end of namespace node_dbus

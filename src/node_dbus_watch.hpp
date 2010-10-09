@@ -21,7 +21,10 @@ class Watch : public v8_utils::Wrapped<Watch> {
         inline DBusWatch * watch() { return watch_; }
     private:
         Watch();
-        Watch(DBusWatch * watch);
+        Watch(Watch const&);
+        Watch const& operator=(Watch const&);
+
+        explicit Watch(DBusWatch * watch);
 
         static v8::Handle<v8::Value> New(v8::Arguments const&);
         static v8::Handle<v8::Value> Flags(v8::Arguments const&);
