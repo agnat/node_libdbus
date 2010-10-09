@@ -30,8 +30,11 @@ bus.introspect('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(data) {
 bus.getObject('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(obj) {
   assert.strictEqual(obj.name, dbus.DBUS_PATH_DBUS);
   var o = dbus.getInterface(obj, dbus.DBUS_INTERFACE_DBUS);
-  o.listNames(function(result) {
-    sys.puts(sys.inspect(result.args()));
+  o.listNames(function(error, names) {
+    assert.strictEqual(error, null);
+    assert.ok('length' in names);
+    assert.ok(names.length > 0);
+    //sys.puts(sys.inspect(names));
     onTestDone();
   });
   onTestDone();

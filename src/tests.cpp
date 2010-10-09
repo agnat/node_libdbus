@@ -15,10 +15,11 @@ struct unit_test {
 
     void
     ok( bool exp, const char * exp_str) {
-        std::cerr << (exp ? "Ok     "
-                : "FAIL   ") << exp_str << std::endl;
+        if ( ! exp ) {
+            std::cerr << "FAIL   " << exp_str << std::endl;
+            failed_ += 1;
+        }
         ++count_;
-        failed_ += exp ? 0 : 1;
     }
 
     virtual void run() = 0;
@@ -38,7 +39,6 @@ size_t unit_test::total_failed = 0;
 struct testConvert : unit_test {
     void
     run() {
-        std::cerr << "=== testConvert" << std::endl;
         HandleScope scope;
 
         Local<Object> a = Array::New();
@@ -65,8 +65,6 @@ struct testConvert : unit_test {
         array_of_arrays->Set(1, out);
         DBusMessage * array_of_arrays_msg = dbus_message_new_signal("/foo", "de.foo.bar", "foobar");
         convert(array_of_arrays, array_of_arrays_msg);
-
-        std::cerr << "=== SIG: " << dbus_message_get_signature(array_of_arrays_msg) << std::endl;
 
         Local<Object> o = Object::New();
         o->Set(String::New("one"), Integer::New(1));

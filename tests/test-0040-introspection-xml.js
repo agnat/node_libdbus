@@ -16,9 +16,9 @@ var tinyXML =
   + '</node>\n'
   ;
 
-sys.puts(JSON.stringify(dbus.introspectionStringToJSON(tinyXML)));
-
-return;
+var pseudoDOM = dbus.introspectionXmlToJs(tinyXML);
+assert.strictEqual(pseudoDOM.nodeName, 'node');
+assert.strictEqual(pseudoDOM.children.length, 1);
 
 var dbus_xml = 
     '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"\n'
@@ -110,4 +110,8 @@ var dbus_xml =
   + '</node>\n'
   ;
 
-dbus.introspectionStringToJSON(dbus_xml);
+pseudoDOM = dbus.introspectionXmlToJs(dbus_xml);
+
+assert.strictEqual(pseudoDOM.nodeName, 'node');
+assert.strictEqual(pseudoDOM.children.length, 2);
+
