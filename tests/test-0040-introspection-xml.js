@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 var dbus   = require('../lib/binding')
   , assert = require('assert')
-  , sys    = require('sys')
+  , util    = require('util')
   ;
 
 var tinyXML =

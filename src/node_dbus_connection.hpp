@@ -2,6 +2,7 @@
 #define NODE_DBUS_CONNECTION_INCLUDED
 
 #include "v8_utils.hpp"
+#include <dbus/dbus.h>
 
 struct DBusConnection;
 
@@ -11,6 +12,8 @@ class Connection : public v8_utils::Wrapped<Connection> {
         typedef v8_utils::Wrapped<Connection> base;
     public:
         static void Initialize(v8_utils::ObjectHandle exports);
+
+        static Connection * New(DBusConnection * c);
 
         inline DBusConnection * connection() { return connection_; }
 
@@ -28,6 +31,9 @@ class Connection : public v8_utils::Wrapped<Connection> {
         static v8::Handle<v8::Value> Send(v8::Arguments const&);
         static v8::Handle<v8::Value> SendWithReply(v8::Arguments const&);
         static v8::Handle<v8::Value> Dispatch(v8::Arguments const&);
+        static v8::Handle<v8::Value> RequestName(v8::Arguments const&);
+        static v8::Handle<v8::Value> ReleaseName(v8::Arguments const&);
+        static v8::Handle<v8::Value> RegisterObjectPath(v8::Arguments const&);
         static v8::Handle<v8::Value> Close(v8::Arguments const&);
 
         static
@@ -48,6 +54,8 @@ class Connection : public v8_utils::Wrapped<Connection> {
 
         DBusConnection * connection_;
         bool             closed_;
+
+        static DBusObjectPathVTable vtable_;
 };
 
 } // end of namespace node_dbus

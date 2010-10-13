@@ -13,9 +13,11 @@ Message::Message(DBusMessage * msg) :
     base(),
     message_(msg)
 {
+//    std::cerr << "ctor" << std::endl;
 }
 
 Message::~Message() {
+//    std::cerr << "dtor" << std::endl;
     if (message_) {
         dbus_message_unref(message_);
         message_ = NULL;
@@ -172,7 +174,7 @@ Message::CreateMethodReturn(Arguments const& args) {
     if ( ! Message::HasInstance( args[0] )) {
         return throwTypeError("argument 1 must be an object (Message)");
     }
-    Message * method_call_message = unwrap(args.Holder());
+    Message * method_call_message = unwrap(args[0]->ToObject());
 
     DBusMessage * msg = dbus_message_new_method_return(method_call_message->message());
     if ( ! msg) {
@@ -191,7 +193,7 @@ Message::CreateErrorMessage(Arguments const& args) {
     if ( ! Message::HasInstance( args[0] )) {
         return throwTypeError("argument 1 must be an object (Message)");
     }
-    Message * reply_msg = unwrap(args.Holder());
+    Message * reply_msg = unwrap(args[0]->ToObject());
 
     if ( ! args[1]->IsString()) {
         return throwTypeError("argument 2 must be a string (error_name)");

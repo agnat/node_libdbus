@@ -3,6 +3,7 @@
 #include "node_dbus_timeout.hpp"
 #include "node_dbus_message.hpp"
 #include "node_dbus_pending_call.hpp"
+#include "node_dbus_server.hpp"
 
 #include <dbus/dbus.h>
 
@@ -75,6 +76,7 @@ init(Handle<Object> ex) {
     Timeout::Initialize(exports);
     Message::Initialize(exports);
     PendingCall::Initialize(exports);
+    Server::Initialize(exports);
 
     defineFunction(exports, "createMethodCall", Message::CreateMethodCall);
     defineFunction(exports, "createMethodReturn", Message::CreateMethodReturn);

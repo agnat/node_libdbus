@@ -135,20 +135,28 @@ struct v8_sink {
     }
     template <typename S>
     void accept(dbus_iterator /*const*/& it, S & stack) {
-        if (it.current_type() == DBUS_TYPE_BOOLEAN) {
+        switch (it.current_type()) {
+        case DBUS_TYPE_BOOLEAN:
             dst_->Set(idx_++, v8::Boolean::New(it.get<bool>()));
-        } else if (it.current_type() == DBUS_TYPE_INT32) {
+            break;
+        case DBUS_TYPE_INT32:
             dst_->Set(idx_++, v8::Integer::New(it.get<int32_t>()));
-        } else if (it.current_type() == DBUS_TYPE_UINT32) {
+            break;
+        case DBUS_TYPE_UINT32:
             dst_->Set(idx_++, v8::Integer::NewFromUnsigned(it.get<uint32_t>()));
-        } else if (it.current_type() == DBUS_TYPE_STRING) {
+            break;
+        case DBUS_TYPE_STRING:
             dst_->Set(idx_++, v8::String::New(it.get<const char *>()));
-        } else if (it.current_type() == DBUS_TYPE_ARRAY) {
+            break;
+        case DBUS_TYPE_ARRAY:
+        case DBUS_TYPE_STRUCT:
             typedef typename S::value_type::element_type frame;
             typedef typename S::value_type frame_ptr;
             stack.push_back(frame_ptr(new frame(it, *this, CONTAINER_ARRAY)));
-        } else {
+            break;
+        default:
             std::cerr << "v8 sink: unhandled type" << std::endl;
+            break;
         }
     }
 

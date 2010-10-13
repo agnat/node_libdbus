@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
 var   dbus   = require('../lib/dbus')
-    , sys    = require('sys')
+    , util    = require('util')
     , assert = require('assert')
     ;
 
-var bus = new dbus.Connection(dbus.DBUS_BUS_SYSTEM);
+var bus = dbus.sessionBus();
 
 var msg = dbus.createMethodCall(
     dbus.DBUS_SERVICE_DBUS
@@ -30,6 +30,7 @@ var pending_call = bus.send(msg, function(message){
   assert.strictEqual(result.length, 1);
   assert.ok(result[0].length > 0);
   var serviceNames = result[0];
+  //util.puts(util.inspect(serviceNames));
   var foundDBus = false;
   for (var i = 0; i < serviceNames.length; ++i) {
     if (serviceNames[i] === 'org.freedesktop.DBus') {

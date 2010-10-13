@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var   dbus   = require('../lib/dbus')
-    , sys    = require('sys')
+    , util    = require('util')
     , assert = require('assert')
     ;
 
@@ -13,3 +13,5 @@ var msg = dbus.createMethodCall(
 );
 
 msg.appendArgs('foo');
+
+assert.strictEqual(msg.signature, 's');

@@ -1,43 +1,29 @@
 #!/usr/bin/env node
 
-var dbus   = require('../lib/dbus.js')
-  , sys    = require('sys')
-  , assert = require('assert')
+var dbus = require('../lib/dbus.js')
+  , util = require('util')
+  , tt   = require('./test_tools')
   ;
 
 var bus = dbus.systemBus();
-var timeout = setTimeout(function() {
-  assert.ok(false, "timeout");
-  process.exit(1);
-}, 5000);
-
-var expectedResults = 3;
-var resultCount = 0;
-function onTestDone() {
-  resultCount += 1;
-  if (expectedResults === resultCount) {
-    bus.close();
-    clearTimeout(timeout);
-    process.exit(0);
-  }
-}
+var test_timer = new tt.TestTimer(10, 3, function() { bus.close() });
 
 bus.introspect('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(data) {
-  assert.strictEqual(data.nodeName, 'node');
-  onTestDone();
+  tt.strictEqual(data.nodeName, 'node');
+  test_timer.passed('get introspection data');
 });
 
 bus.getObject('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(obj) {
-  assert.strictEqual(obj.name, dbus.DBUS_PATH_DBUS);
+  tt.strictEqual(obj.name, dbus.DBUS_PATH_DBUS);
   var o = dbus.getInterface(obj, dbus.DBUS_INTERFACE_DBUS);
   o.listNames(function(error, names) {
-    assert.strictEqual(error, null);
-    assert.ok('length' in names);
-    assert.ok(names.length > 0);
-    //sys.puts(sys.inspect(names));
-    onTestDone();
+    tt.strictEqual(error, null);
+    tt.ok('length' in names);
+    tt.ok(names.length > 0);
+    //util.puts(util.inspect(names));
+    test_timer.passed('result of call to ListNames()');
   });
-  onTestDone();
+  test_timer.passed('got object');
 });
 
 /*
@@ -46,8 +32,8 @@ var obj = bus.getObject(
     'org.freedesktop.DBus'
   , dbus.DBUS_PATH_DBUS
   , function(result) { 
-    sys.puts(sys.inspect(result));
-    sys.puts(result.args());
+    util.puts(util.inspect(result));
+    util.puts(result.args());
     bus.close();
   }
 );
@@ -56,8 +42,8 @@ var obj = bus.getObject(
     'org.freedesktop.Avahi'
   , '/'
   , function(result) { 
-    sys.puts(sys.inspect(result));
-    sys.puts(result.args());
+    util.puts(util.inspect(result));
+    util.puts(result.args());
     bus.close();
   }
 );

@@ -3,12 +3,35 @@
 #include <dbus/dbus.h>
 
 #include "node_dbus_utils.hpp"
+#include "node_dbus_connection.hpp"
 #include "node_dbus_mainloop_callbacks.hpp"
 
 using namespace v8;
 using namespace v8_utils;
 
 namespace node_dbus {
+
+static
+void
+on_new_connection(DBusServer * server, DBusConnection * connection, void * data) {
+    std::cerr << "==== on_new_connection" << std::endl;
+    HandleScope scope;
+    Server * s = static_cast<Server*>(data);
+    Local<Value> v = s->handle_->Get(String::NewSymbol("_onNewConnection"));
+    if ( ! v->IsFunction()) {
+        std::cerr << "ERROR: failed to get _onNewConnection() function" << std::endl;
+        return;
+    }
+    Local<Function> f = Function::Cast(*v);
+    TryCatch trycatch;
+    Local<Value> arg(Local<Value>::New(Connection::New(connection)->handle_));
+    f->Call(s->handle_, 1, & arg);
+    if (trycatch.HasCaught()) {
+        Handle<Value> exception = trycatch.Exception();
+        String::AsciiValue exception_str(exception);
+        std::cerr << *exception_str << std::endl;
+    }
+}
 
 void
 Server::Initialize(ObjectHandle exports) {
@@ -60,6 +83,12 @@ Server::New(v8::Arguments const& args) {
             , add_timeout<Server>
             , remove_timeout<Server>
             , toggle_timeout<Server>
+            , server
+            , NULL /*free data*/
+    );
+    dbus_server_set_new_connection_function(
+              srv
+            , on_new_connection
             , server
             , NULL /*free data*/
     );

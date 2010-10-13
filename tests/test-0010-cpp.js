@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var t   = require('../lib/tests')
-  , sys = require('sys')
+  , util = require('util')
   ;
 
 if ( t.failed > 0) {
