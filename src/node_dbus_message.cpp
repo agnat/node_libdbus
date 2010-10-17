@@ -32,6 +32,7 @@ Message::Initialize(v8_utils::ObjectHandle exports) {
     prototype_method("hasInterface", HasInterface);
     prototype_method("args", Args);
     prototype_method("appendArgs", AppendArgs);
+    prototype_method("appendArgsWithSignature", AppendArgsWithSignature);
 
     property("serial", GetSerial);
     property("replySerial", GetReplySerial, SetReplySerial);
@@ -74,8 +75,8 @@ Message::New(Arguments const& args) {
     return args.This();
 }
 
-v8::Handle<v8::Value>
-Message::HasPath(v8::Arguments const& args) {
+Handle<Value>
+Message::HasPath(Arguments const& args) {
     HandleScope scope;
     if ( ! args[0]->IsString()) {
         return throwTypeError("argument 1 must be a string (object path)");
@@ -85,8 +86,8 @@ Message::HasPath(v8::Arguments const& args) {
     return scope.Close(Boolean::New(dbus_message_has_path(msg->message(), *path)));
 }
 
-v8::Handle<v8::Value>
-Message::HasInterface(v8::Arguments const& args) {
+Handle<Value>
+Message::HasInterface(Arguments const& args) {
     HandleScope scope;
     if ( ! args[0]->IsString()) {
         return throwTypeError("argument 1 must be a string (object path)");
@@ -96,16 +97,16 @@ Message::HasInterface(v8::Arguments const& args) {
     return scope.Close(Boolean::New(dbus_message_has_interface(msg->message(), *interface)));
 }
 
-v8::Handle<v8::Value>
-Message::Args(v8::Arguments const& args) {
+Handle<Value>
+Message::Args(Arguments const& args) {
     HandleScope scope;
     Local<Array> result(Array::New());
     convert(unwrap(args.Holder())->message(), result);
     return scope.Close(result);
 }
 
-v8::Handle<v8::Value>
-Message::AppendArgs(v8::Arguments const& args) {
+Handle<Value>
+Message::AppendArgs(Arguments const& args) {
     HandleScope scope;
     Message * msg = unwrap(args.Holder());
     msg->appendArgs(args);
@@ -116,10 +117,33 @@ void
 Message::appendArgs(Arguments const& args, size_t firstArg) {
     HandleScope scope;
     Local<Array> a(Array::New());
-    for (size_t i = firstArg; i < args.Length(); ++i) {
+    for (int i = firstArg; i < args.Length(); ++i) {
         a->Set(i - firstArg, args[i]);
     }
     convert(a, message());
+}
+
+Handle<Value>
+Message::AppendArgsWithSignature(Arguments const& args) {
+    HandleScope scope;
+    if (argumentCountMismatch(args, 2)) {
+        return throwArgumentCountMismatchException(args, 2);
+    }
+    if ( ! args[0]->IsArray()) {
+        return throwTypeError("argument 1 must be an array (args)");
+    }
+    Local<Array> a(Array::Cast(*args[0]));
+
+    if ( ! args[1]->IsString()) {
+        return throwTypeError("argument 2 must be a string (signature)");
+    }
+    String::Utf8Value signature(args[1]->ToString());
+
+    Message * msg = unwrap(args.Holder());
+
+    convert(a, msg->message(), *signature);
+
+    return Undefined();
 }
 
 Handle<Value>
@@ -251,18 +275,18 @@ Message::CreateSignal(Arguments const& args) {
     return scope.Close(Message::function()->NewInstance(1, & arg));
 }
 
-v8::Handle<v8::Value>
-Message::GetSerial(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetSerial(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     return HandleScope().Close(
             Integer::NewFromUnsigned(dbus_message_get_serial(msg->message())));
 }
 
-v8::Handle<v8::Value>
-Message::GetReplySerial(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetReplySerial(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     return HandleScope().Close(
@@ -270,8 +294,8 @@ Message::GetReplySerial(v8::Local<v8::String> property,
 }
 
 void
-Message::SetReplySerial(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetReplySerial(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -282,18 +306,18 @@ Message::SetReplySerial(v8::Local<v8::String> property, v8::Local<v8::Value> val
     dbus_message_set_reply_serial(msg->message(), value->Uint32Value());
 }
 
-v8::Handle<v8::Value>
-Message::GetType(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetType(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     return HandleScope().Close(
             Integer::New(dbus_message_get_type(msg->message())));
 }
 
-v8::Handle<v8::Value>
-Message::GetNoReply(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetNoReply(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     return HandleScope().Close(
@@ -301,8 +325,8 @@ Message::GetNoReply(v8::Local<v8::String> property,
 }
 
 void
-Message::SetNoReply(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetNoReply(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -313,9 +337,9 @@ Message::SetNoReply(v8::Local<v8::String> property, v8::Local<v8::Value> value,
     dbus_message_set_no_reply(msg->message(), value->ToBoolean()->Value());
 }
 
-v8::Handle<v8::Value>
-Message::GetAutoStart(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetAutoStart(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     return HandleScope().Close(
@@ -323,8 +347,8 @@ Message::GetAutoStart(v8::Local<v8::String> property,
 }
 
 void
-Message::SetAutoStart(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetAutoStart(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -335,9 +359,9 @@ Message::SetAutoStart(v8::Local<v8::String> property, v8::Local<v8::Value> value
     dbus_message_set_auto_start(msg->message(), value->ToBoolean()->Value());
 }
 
-v8::Handle<v8::Value>
-Message::GetPath(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetPath(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     const char * path = dbus_message_get_path(msg->message());
@@ -348,8 +372,8 @@ Message::GetPath(v8::Local<v8::String> property,
 }
 
 void
-Message::SetPath(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetPath(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -361,9 +385,9 @@ Message::SetPath(v8::Local<v8::String> property, v8::Local<v8::Value> value,
     dbus_message_set_path(msg->message(), *path);
 }
 
-v8::Handle<v8::Value>
-Message::GetInterface(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetInterface(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     const char * interface = dbus_message_get_interface(msg->message());
@@ -374,8 +398,8 @@ Message::GetInterface(v8::Local<v8::String> property,
 }
 
 void
-Message::SetInterface(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetInterface(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -387,9 +411,9 @@ Message::SetInterface(v8::Local<v8::String> property, v8::Local<v8::Value> value
     dbus_message_set_interface(msg->message(), *interface);
 }
 
-v8::Handle<v8::Value>
-Message::GetMember(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetMember(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     const char * member = dbus_message_get_member(msg->message());
@@ -400,8 +424,8 @@ Message::GetMember(v8::Local<v8::String> property,
 }
 
 void
-Message::SetMember(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetMember(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -413,9 +437,9 @@ Message::SetMember(v8::Local<v8::String> property, v8::Local<v8::Value> value,
     dbus_message_set_member(msg->message(), *member);
 }
 
-v8::Handle<v8::Value>
-Message::GetDestination(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetDestination(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     const char * destination = dbus_message_get_destination(msg->message());
@@ -426,8 +450,8 @@ Message::GetDestination(v8::Local<v8::String> property,
 }
 
 void
-Message::SetDestination(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-        const v8::AccessorInfo& info)
+Message::SetDestination(Local<String> property, Local<Value> value,
+        const AccessorInfo& info)
 {
     HandleScope scope;
     Message * msg = unwrap(info.Holder());
@@ -439,9 +463,9 @@ Message::SetDestination(v8::Local<v8::String> property, v8::Local<v8::Value> val
     dbus_message_set_destination(msg->message(), *destination);
 }
 
-v8::Handle<v8::Value>
-Message::GetSignature(v8::Local<v8::String> property,
-        const v8::AccessorInfo &info)
+Handle<Value>
+Message::GetSignature(Local<String> property,
+        const AccessorInfo &info)
 {
     Message * msg = unwrap(info.Holder());
     const char * sig = dbus_message_get_signature(msg->message());

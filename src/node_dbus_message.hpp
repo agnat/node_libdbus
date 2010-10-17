@@ -35,6 +35,7 @@ class Message : public v8_utils::Wrapped<Message> {
         static v8::Handle<v8::Value> HasInterface(v8::Arguments const&);
         static v8::Handle<v8::Value> Args(v8::Arguments const&);
         static v8::Handle<v8::Value> AppendArgs(v8::Arguments const&);
+        static v8::Handle<v8::Value> AppendArgsWithSignature(v8::Arguments const&);
 
         static
         v8::Handle<v8::Value>

@@ -45,6 +45,7 @@ def build(bld):
   addon = bld.new_task_gen('cxx', 'shlib', 'node_addon')
   addon.target = 'binding'
   addon.uselib = ['DBUS', 'EXPAT']
+  addon.cxxflags = ['-Wall']
   addon.include = '.'
   addon.source = [
       'src/binding.cpp'
@@ -53,6 +54,7 @@ def build(bld):
     , 'src/node_dbus_watch.cpp'
     , 'src/node_dbus_timeout.cpp'
     , 'src/node_dbus_message.cpp'
+    , 'src/node_dbus_message_iter.cpp'
     , 'src/node_dbus_pending_call.cpp'
     , 'src/node_dbus_introspection.cpp'
     , 'src/node_dbus_server.cpp'

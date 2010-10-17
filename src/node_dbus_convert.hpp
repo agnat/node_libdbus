@@ -255,7 +255,7 @@ struct stack_frame {
 
 template <typename SrcT, typename DstT>
 void
-convert(SrcT src, DstT dst) {
+convert(SrcT src, DstT dst, const char * signature = NULL) {
     using detail::stack_frame;
     typedef stack_frame<SrcT, DstT> frame;
     typedef std::tr1::shared_ptr<frame> frame_ptr;

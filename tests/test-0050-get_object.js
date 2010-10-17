@@ -5,7 +5,7 @@ var dbus = require('../lib/dbus.js')
   , tt   = require('./test_tools')
   ;
 
-var bus = dbus.systemBus();
+var bus = dbus.sessionBus();
 var test_timer = new tt.TestTimer(10, 3, function() { bus.close() });
 
 bus.introspect('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(data) {
@@ -26,26 +26,3 @@ bus.getObject('org.freedesktop.DBus', dbus.DBUS_PATH_DBUS, function(obj) {
   test_timer.passed('got object');
 });
 
-/*
- 
-var obj = bus.getObject(
-    'org.freedesktop.DBus'
-  , dbus.DBUS_PATH_DBUS
-  , function(result) { 
-    util.puts(util.inspect(result));
-    util.puts(result.args());
-    bus.close();
-  }
-);
-
-var obj = bus.getObject(
-    'org.freedesktop.Avahi'
-  , '/'
-  , function(result) { 
-    util.puts(util.inspect(result));
-    util.puts(result.args());
-    bus.close();
-  }
-);
-
-*/

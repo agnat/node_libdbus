@@ -2,6 +2,7 @@
 #include "node_dbus_watch.hpp"
 #include "node_dbus_timeout.hpp"
 #include "node_dbus_message.hpp"
+#include "node_dbus_message_iter.hpp"
 #include "node_dbus_pending_call.hpp"
 #include "node_dbus_server.hpp"
 
@@ -75,6 +76,7 @@ init(Handle<Object> ex) {
     Watch::Initialize(exports);
     Timeout::Initialize(exports);
     Message::Initialize(exports);
+    MessageIter::Initialize(exports);
     PendingCall::Initialize(exports);
     Server::Initialize(exports);
 

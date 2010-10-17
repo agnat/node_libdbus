@@ -25,6 +25,7 @@ handleMessage(DBusConnection * connection, DBusMessage * message, void * data) {
     dbus_message_ref(message);
     Local<Value> arg(Local<Value>::New(msg->handle_));
     (*f)->Call(arg->ToObject(), 1, & arg); // XXX better use connection as 'this'
+    return DBUS_HANDLER_RESULT_HANDLED;
 }
 
 static
@@ -110,7 +111,7 @@ Connection *
 Connection::New(DBusConnection * connection) {
     HandleScope scope;
     Local<Value> arg = External::New(connection);
-    return Connection::unwrap( Connection::function()->NewInstance(1, & arg) );
+    return unwrap( function()->NewInstance(1, & arg) );
 }
 
 Handle<Value>
@@ -244,8 +245,8 @@ Handle<Value>
 Connection::Dispatch(Arguments const& args) {
     HandleScope scope;
     Connection * c = unwrap(args.This());
-    dbus_bool_t ok = dbus_connection_dispatch(c->connection());
-    return Undefined();
+    DBusDispatchStatus status = dbus_connection_dispatch(c->connection());
+    return scope.Close(Integer::New(status));
 }
 
 v8::Handle<v8::Value>

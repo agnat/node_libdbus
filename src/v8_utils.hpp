@@ -67,7 +67,7 @@ throwTypeError(const char * message) {
 
 inline
 bool
-argumentCountMismatch(v8::Arguments const& args, size_t min, int max = -1) {
+argumentCountMismatch(v8::Arguments const& args, int min, int max = -1) {
     if (max == -1) {
         return args.Length() != min;
     }
