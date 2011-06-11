@@ -139,6 +139,9 @@ struct v8_sink {
         case DBUS_TYPE_BOOLEAN:
             dst_->Set(idx_++, v8::Boolean::New(it.get<bool>()));
             break;
+        case DBUS_TYPE_DOUBLE:
+            dst_->Set(idx_++, v8::Number::New(it.get<double>()));
+            break;
         case DBUS_TYPE_INT32:
             dst_->Set(idx_++, v8::Integer::New(it.get<int32_t>()));
             break;
