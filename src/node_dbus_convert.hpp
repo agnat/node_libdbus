@@ -199,6 +199,9 @@ class dbus_sink {
             } else if ((*it)->IsUint32()) {
                 uint32_t v = (*it)->Uint32Value();
                 dbus_message_iter_append_basic( & it_, DBUS_TYPE_UINT32, & v);
+            } else if ((*it)->IsNumber()) {
+                double v = (*it)->NumberValue();
+                dbus_message_iter_append_basic( & it_, DBUS_TYPE_DOUBLE, & v);
             } else if ((*it)->IsString()) {
                 v8::String::Utf8Value v((*it)->ToString());
                 const char * str = *v;
